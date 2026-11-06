@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} | RailConnect</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#1e293b}
+header{background:linear-gradient(120deg,#09203f,#176b87);color:white;padding:20px 6%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0}nav a{color:white;text-decoration:none;margin:0 7px;font-weight:bold}
+main{width:92%;max-width:1100px;margin:28px auto}.hero{padding:35px 25px;background:linear-gradient(120deg,#0f766e,#164e63);color:white;border-radius:16px;margin-bottom:22px}
+.card{background:white;padding:22px;border-radius:13px;margin-bottom:20px;box-shadow:0 4px 16px #0f172a0d}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+label{display:block;margin:12px 0 6px;font-weight:bold}input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:15px}
+button,.button{display:inline-block;background:#0f766e;color:white;padding:10px 15px;border:0;border-radius:7px;text-decoration:none;cursor:pointer;margin-top:10px;font-weight:bold}
+.secondary{background:#334155}.danger{background:#dc2626}.message{background:#fff7ed;color:#9a3412;padding:13px;border-radius:8px;margin-bottom:18px}
+.train{border-left:5px solid #0f766e}.muted{color:#64748b}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;background:white}th,td{border:1px solid #e2e8f0;padding:9px;text-align:left}th{background:#e2e8f0}
+.seat-grid{display:grid;grid-template-columns:repeat(4,minmax(55px,1fr));gap:10px;margin:18px 0}.seat{padding:13px 4px;text-align:center;border-radius:7px;font-weight:bold}
+.available{background:#dcfce7;color:#166534}.booked{background:#fee2e2;color:#991b1b}.ticket{border:2px dashed #0f766e;background:#f0fdfa}
+footer{text-align:center;color:#64748b;padding:22px}
+@media print{header,footer,.no-print{display:none!important}body{background:white}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header>
+<h1>🚆 RailConnect</h1>
+<nav><a href="/">Home</a>
+{% if user %}
+{% if user.role == "Admin" %}<a href="/admin">Admin Dashboard</a>
+{% else %}<a href="/customer">Dashboard</a><a href="/bookings">My Bookings</a>{% endif %}
+<a href="/logout">Logout</a>
+{% else %}<a href="/login">Login</a><a href="/register">Register</a>{% endif %}
+</nav>
+</header>
+<main>
+{% if message %}<div class="message">{{ message }}</div>{% endif %}
+
+{% if title == "Railway Reservation System" %}
+<section class="hero"><h2>Find your train. Plan your journey.</h2><p>Search our {{ train_count }} sample trains by route, train name, or train number. You can search without logging in. Login is required only when you want to book a ticket.</p></section>
+<div class="card"><h2>Search by Route</h2>
+<form action="/search" method="get"><div class="grid">
+<div><label for="source">From</label><select id="source" name="source"><option value="">Select source city</option>{% for city in cities %}<option value="{{ city }}">{{ city }}</option>{% endfor %}</select></div>
+<div><label for="destination">To</label><select id="destination" name="destination"><option value="">Select destination city</option>{% for city in cities %}<option value="{{ city }}">{{ city }}</option>{% endfor %}</select></div>
+</div><button type="submit">Search Route</button></form>
+<hr><h2>Search by Train Name or Number</h2><form action="/search" method="get"><label for="query">Train name or train number</label><input id="query" name="query" placeholder="e.g. 20001 or Vijayawada Express" required><button type="submit">Search Train</button></form>
+<p class="muted">Note: This is demonstration data for a college mini-project, not live Indian Railways data.</p></div>
+
+{% elif title == "Register" %}
+<div class="card"><h2>Create Account</h2>
+<p class="muted">Username: English letters and spaces, at most one dot, no leading/trailing dot or space.</p>
+<p class="muted">Password: exactly 10 characters: 1 uppercase, 4 lowercase, 4 digits and 1 special character.</p>
+<form method="post">
+<label>Account Type</label><select name="role" required>
+<option value="Customer" {% if requested_role != "Admin" %}selected{% endif %}>Customer</option>
+{% if not initial_admin_created %}<option value="Admin" {% if requested_role == "Admin" %}selected{% endif %}>Initial Admin</option>{% endif %}
+</select>
+<label>Username</label><input name="username" maxlength="40" required>
+<label>Password</label><input type="password" name="password" minlength="10" maxlength="10" required>
+<button type="submit">Register</button></form></div>
+
+{% elif title == "Login" %}
+<div class="card"><h2>Login</h2><form method="post">
+<label>Account Type</label>
+<select name="role" required>
+<option value="Customer" {% if requested_role != "Admin" %}selected{% endif %}>Customer</option>
+<option value="Admin" {% if requested_role == "Admin" %}selected{% endif %}>Admin</option>
+</select><input type="hidden" name="next_url" value="{{ next_url|default('') }}">
+<label>Username</label><input name="username" required><label>Password</label><input type="password" name="password" required>
+<button type="submit">Login</button></form></div>
+
+{% elif title == "Customer Dashboard" %}
+<section class="hero"><h2>Welcome, {{ user.username }}!</h2><p>Find your next train journey.</p></section>
+<div class="card"><h2>Search by Route</h2><form action="/search" method="get"><div class="grid">
+<div><label>Source</label><input name="source" placeholder="e.g. Vijayawada"></div>
+<div><label>Destination</label><input name="destination" placeholder="e.g. Hyderabad"></div></div><button>Search Route</button></form>
+<hr><h2>Search by Train</h2><form action="/search" method="get"><label>Train name or number</label><input name="query" placeholder="Enter train name or number"><button>Search Train</button></form></div>
+<div class="card"><h2>Demonstration Trains</h2>{% for t in trains_list %}
+<div class="card train"><h3>{{ t.name }} ({{ t.number }})</h3><p>{{ t.source }} → {{ t.destination }}</p><p>{{ t.distance }} km · Fare ₹{{ "%.2f"|format(t.distance*t.rate) }} · Available seats: {{ available_count(t) }}</p><a class="button" href="/seats/{{ t.id }}">View Seats</a></div>
+{% endfor %}</div>
+
+{% elif title == "Train Search Results" %}
+<div class="card"><h2>Train Search Results</h2><p class="muted">Search results from the 100 sample trains.</p><a class="button secondary" href="/">New Search</a>
+{% for t in trains_list %}
+<div class="card train"><h3>{{ t.name }} <span class="muted">({{ t.number }})</span></h3><p><b>{{ t.source }} → {{ t.destination }}</b></p><p>Distance: {{ t.distance }} km · Fare: ₹{{ "%.2f"|format(t.fare) }} · Available seats: {{ t.available }}</p><a class="button" href="/seats/{{ t.id }}">View Seats / Booking</a></div>
+{% else %}<p>No matching trains found. Check the city names or train number and try again.</p>{% endfor %}</div>
+
+{% elif title == "Seat Selection" %}
+{% if train %}
+<div class="card"><h2>Select Your Seat</h2><h3>{{ train.name }} ({{ train.number }})</h3>
+<p>{{ train.source }} → {{ train.destination }} · {{ train.distance }} km</p><p>Fare: ₹{{ "%.2f"|format(train.distance*train.rate) }}</p>
+<div class="seat-grid">{% for seat in range(1,train.total_seats+1) %}
+{% if seat in available %}<div class="seat available">S{{ "%02d"|format(seat) }}<br>Available</div>
+{% else %}<div class="seat booked">S{{ "%02d"|format(seat) }}<br>Booked</div>{% endif %}{% endfor %}</div>
+{% if available %}
+{% if user and user.role == "Customer" %}
+<form method="post" action="/book"><input type="hidden" name="train_id" value="{{ train.id }}">
+<label>Passenger Name</label><input name="passenger_name" required pattern="[A-Za-z ]+">
+<label>Phone Number</label><input name="phone" required pattern="[0-9]{10}" maxlength="10">
+<label>Choose Seat</label><select name="seat" required>{% for seat in available %}<option value="{{ seat }}">Seat S{{ "%02d"|format(seat) }}</option>{% endfor %}</select>
+<button>Confirm Booking</button></form>
+{% elif user and user.role == "Admin" %}<p class="muted">Administrator accounts cannot book passenger tickets.</p>
+{% else %}<p><b>Want to book this train?</b> Please login or create a customer account first.</p><a class="button" href="/login?next=/seats/{{ train.id }}">Login to Book</a><a class="button secondary" href="/register">Create Account</a>{% endif %}
+{% else %}<p>No seats available.</p>{% endif %}</div>
+{% endif %}
+
+{% elif title == "Your Ticket" %}
+<div class="card ticket"><h2>🚆 RailConnect — E-Ticket</h2><h3>Booking Confirmed</h3>
+<p><b>Ticket ID:</b> TKT{{ ticket.ticket_id }}</p><p><b>Passenger:</b> {{ ticket.passenger_name }}</p><p><b>Phone:</b> {{ ticket.phone }}</p>
+<p><b>Train:</b> {{ ticket.train_name }} ({{ ticket.train_number }})</p><p><b>From:</b> {{ ticket.source }}</p><p><b>To:</b> {{ ticket.destination }}</p>
+<p><b>Distance:</b> {{ ticket.distance }} km</p><p><b>Seat:</b> S{{ "%02d"|format(ticket.seat) }}</p>
+<p><b>Fare:</b> ₹{{ "%.2f"|format(ticket.fare) }}</p><p><b>Booking date:</b> {{ ticket.date }}</p><p><b>Status:</b> {{ ticket.status }}</p></div>
+<button class="no-print" onclick="window.print()">Print Ticket</button><a class="button no-print" href="/bookings">My Bookings</a>
+
+{% elif title == "My Bookings" %}
+<div class="card"><h2>My Bookings</h2><div class="table-wrap"><table><tr><th>Ticket</th><th>Train</th><th>Route</th><th>Seat</th><th>Fare</th><th>Status</th><th>Action</th></tr>
+{% for b in bookings_list %}<tr><td>TKT{{ b.ticket_id }}</td><td>{{ b.train_name }}</td><td>{{ b.source }} → {{ b.destination }}</td><td>S{{ "%02d"|format(b.seat) }}</td><td>₹{{ "%.2f"|format(b.fare) }}</td><td>{{ b.status }}</td><td>
+{% if b.status == "Confirmed" %}<form method="post" action="/cancel/{{ b.ticket_id }}"><button class="danger">Cancel</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7">No bookings yet.</td></tr>{% endfor %}</table></div></div>
+
+{% elif title == "Admin Dashboard" %}
+<section class="hero"><h2>Administrator Dashboard</h2><p>Manage trains, passenger bookings and reports.</p>
+<a class="button" href="/admin/add-train">Add Train</a><a class="button secondary" href="/admin/register">Create Admin Account</a></section>
+<div class="grid"><div class="card"><h3>Confirmed Bookings</h3><h2>{{ confirmed_count }}</h2></div><div class="card"><h3>Revenue</h3><h2>₹{{ "%.2f"|format(revenue) }}</h2></div><div class="card"><h3>Cancellations</h3><h2>{{ cancelled_list|length }}</h2></div></div>
+<div class="card"><h2>Train Management</h2><div class="table-wrap"><table><tr><th>No.</th><th>Name</th><th>Route</th><th>Distance</th><th>Rate/km</th><th>Seats</th><th>Actions</th></tr>
+{% for t in trains_list %}<tr><td>{{ t.number }}</td><td>{{ t.name }}</td><td>{{ t.source }} → {{ t.destination }}</td><td>{{ t.distance }} km</td><td>₹{{ "%.2f"|format(t.rate) }}</td><td>{{ t.total_seats }}</td><td><a href="/admin/update-train/{{ t.id }}">Update</a><form method="post" action="/admin/delete-train/{{ t.id }}"><button class="danger">Delete</button></form></td></tr>{% endfor %}</table></div></div>
+<div class="card"><h2>All Passenger Bookings</h2><div class="table-wrap"><table><tr><th>Ticket</th><th>Passenger</th><th>Train</th><th>Route</th><th>Seat</th><th>Fare</th><th>Status</th><th>Action</th></tr>
+{% for b in bookings_list %}<tr><td>TKT{{ b.ticket_id }}</td><td>{{ b.passenger_name }}</td><td>{{ b.train_name }} ({{ b.train_number }})</td><td>{{ b.source }} → {{ b.destination }}</td><td>S{{ "%02d"|format(b.seat) }}</td><td>₹{{ "%.2f"|format(b.fare) }}</td><td>{{ b.status }}</td><td>{% if b.status == "Confirmed" %}<form method="post" action="/cancel/{{ b.ticket_id }}"><button class="danger">Cancel</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="8">No bookings yet.</td></tr>{% endfor %}</table></div></div>
+<div class="card"><h2>Cancelled Tickets</h2>{% for b in cancelled_list %}<p>TKT{{ b.ticket_id }} — {{ b.passenger_name }} — {{ b.train_name }} — Seat {{ b.seat }}</p>{% else %}<p>No cancellations yet.</p>{% endfor %}</div>
+
+{% elif title == "Add Train" %}
+<div class="card"><h2>Add Train</h2><form method="post">
+<label>Train Number (digits only)</label><input name="number" pattern="[0-9]+" required>
+<label>Train Name</label><input name="name" required><label>Source</label><input name="source" required><label>Destination</label><input name="destination" required>
+<label>Distance (km)</label><input type="number" name="distance" min="1" required>
+<label>Fare per km (₹)</label><input type="number" name="rate" min="0.01" step="0.01" required>
+<label>Total seats</label><input type="number" name="total_seats" min="1" required><button>Add Train</button></form></div>
+
+{% elif title == "Update Train" %}
+<div class="card"><h2>Update Train</h2><form method="post"><label>Train Number</label><input value="{{ train.number }}" disabled>
+<label>Train Name</label><input name="name" value="{{ train.name }}" required><label>Source</label><input name="source" value="{{ train.source }}" required>
+<label>Destination</label><input name="destination" value="{{ train.destination }}" required><label>Distance (km)</label><input type="number" name="distance" min="1" value="{{ train.distance }}" required>
+<label>Fare per km</label><input type="number" name="rate" min="0.01" step="0.01" value="{{ train.rate }}" required>
+<label>Total seats</label><input type="number" name="total_seats" min="1" value="{{ train.total_seats }}" required><button>Save Changes</button></form></div>
+
+{% elif title == "Create Admin" %}
+<div class="card"><h2>Create Additional Admin</h2><p>Only a logged-in admin can create another admin.</p><form method="post">
+<label>New Admin Username</label><input name="username" required><label>Password</label><input type="password" name="password" minlength="10" maxlength="10" required><button>Create Admin</button></form></div>
+
+{% else %}
+<div class="card"><h2>{{ title }}</h2><a class="button" href="/">Return Home</a></div>
+{% endif %}
+</main>
+<footer>RailConnect — Student mini project · Demonstration data only</footer>
+</body></html>
